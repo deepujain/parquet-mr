@@ -61,8 +61,13 @@ public class TestInputOutputFormat {
     protected void map(Void key, Group value, Mapper<Void,Group,LongWritable,Text>.Context context) throws IOException ,InterruptedException {
       context.write(new LongWritable(value.getInteger("line", 0)), new Text(value.getString("content", 0)));
     }
-
   }
+    
+    public static class MyMapper3 extends Mapper<Void, Group, LongWritable, Text> {
+      protected void map(Void key, Group value, Mapper<Void,Group,LongWritable,Text>.Context context) throws IOException ,InterruptedException {
+        context.write(new LongWritable(value.getInteger("line", 0)), new Text(value.getInteger("line", 0)+""));
+      }
+    }
 
   @Test
   public void testReadWrite() throws IOException, ClassNotFoundException, InterruptedException {
@@ -116,6 +121,39 @@ public class TestInputOutputFormat {
     }
     assertNull("line " + lineNumber, lineIn);
     assertNull("line " + lineNumber, out.readLine());
+    in.close();
+    out.close();
+  
+    {
+    	fileSystem.delete(outputPath, true);
+        final Job job = new Job(conf, "read-onecolumn");
+        job.setInputFormatClass(ExampleInputFormat.class);
+        ExampleInputFormat.setInputPaths(job, parquetPath);
+        job.setOutputFormatClass(TextOutputFormat.class);
+        TextOutputFormat.setOutputPath(job, outputPath);
+        job.setMapperClass(TestInputOutputFormat.MyMapper3.class);
+        ExampleInputFormat.setSchema(
+                job,
+                MessageTypeParser.parseMessageType(
+                    "message example {\n" +
+                    "required int32 line;\n" +
+                    "}"));
+        job.setNumReduceTasks(0);
+        job.submit();
+        waitForJob(job);
+      }
+    
+    final BufferedReader inr = new BufferedReader(new FileReader(new File(inputPath.toString())));
+    final BufferedReader outr = new BufferedReader(new FileReader(new File(outputPath.toString(), "part-m-00000")));
+    lineOut = null;
+    lineNumber = 0;
+    while ((lineIn = inr.readLine()) != null && (lineOut = outr.readLine()) != null) {
+      ++ lineNumber;
+      lineOut = lineOut.substring(lineOut.indexOf("\t") + 1);
+      assertEquals("line " + lineNumber, lineIn, lineOut);
+    }
+    assertNull("line " + lineNumber, lineIn);
+    assertNull("line " + lineNumber, outr.readLine());
     in.close();
     out.close();
   }

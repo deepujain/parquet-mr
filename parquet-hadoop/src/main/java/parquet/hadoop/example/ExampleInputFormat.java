@@ -15,8 +15,11 @@
  */
 package parquet.hadoop.example;
 
+import org.apache.hadoop.mapreduce.Job;
+
 import parquet.example.data.Group;
 import parquet.hadoop.ParquetInputFormat;
+import parquet.schema.MessageType;
 
 /**
  * Example input format to read Parquet files
@@ -31,5 +34,17 @@ public class ExampleInputFormat extends ParquetInputFormat<Group> {
   public ExampleInputFormat() {
     super(GroupReadSupport.class);
   }
+
+	/**
+	 * set the schema being requested to the job conf
+	 * 
+	 * @param schema
+	 *            the requested schema
+	 * @param configuration
+	 *            the job configuration
+	 */
+	public static void setSchema(Job job, MessageType schema) {
+		GroupReadSupport.setSchema(schema, job.getConfiguration());
+	}
 
 }

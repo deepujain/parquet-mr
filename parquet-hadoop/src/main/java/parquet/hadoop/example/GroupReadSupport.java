@@ -24,22 +24,32 @@ import parquet.example.data.simple.convert.GroupRecordConverter;
 import parquet.hadoop.api.ReadSupport;
 import parquet.io.api.RecordMaterializer;
 import parquet.schema.MessageType;
+import parquet.schema.MessageTypeParser;
 
 public class GroupReadSupport extends ReadSupport<Group> {
 
-  @Override
-  public parquet.hadoop.api.ReadSupport.ReadContext init(
-      Configuration configuration, Map<String, String> keyValueMetaData,
-      MessageType fileSchema) {
-    // TODO: support requestedSchema
-    return new ReadContext(fileSchema);
-  }
+	public static final String PARQUET_EXAMPLE_SCHEMA = "parquet.example.schema";
 
-  @Override
-  public RecordMaterializer<Group> prepareForRead(Configuration configuration,
-      Map<String, String> keyValueMetaData, MessageType fileSchema,
-      parquet.hadoop.api.ReadSupport.ReadContext readContext) {
-    return new GroupRecordConverter(readContext.getRequestedSchema());
-  }
+	public static void setSchema(MessageType schema, Configuration configuration) {
+		configuration.set(PARQUET_EXAMPLE_SCHEMA, schema.toString());
+	}
 
+	public static MessageType getSchema(Configuration configuration) {
+		return MessageTypeParser.parseMessageType(configuration.get(PARQUET_EXAMPLE_SCHEMA));
+	}
+
+	@Override
+	public parquet.hadoop.api.ReadSupport.ReadContext init(Configuration configuration,
+			Map<String, String> keyValueMetaData, MessageType fileSchema) {
+		schema = getSchema(configuration);
+		return new ReadContext(schema);
+	}
+
+	private MessageType schema;
+
+	@Override
+	public RecordMaterializer<Group> prepareForRead(Configuration configuration, Map<String, String> keyValueMetaData,
+			MessageType fileSchema, parquet.hadoop.api.ReadSupport.ReadContext readContext) {
+		return new GroupRecordConverter(readContext.getRequestedSchema());
+	}
 }
