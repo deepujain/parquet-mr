@@ -65,7 +65,7 @@ public class TestInputOutputFormat {
     
     public static class MyMapper3 extends Mapper<Void, Group, LongWritable, Text> {
       protected void map(Void key, Group value, Mapper<Void,Group,LongWritable,Text>.Context context) throws IOException ,InterruptedException {
-        context.write(new LongWritable(value.getInteger("line", 0)), new Text(value.getInteger("line", 0)+""));
+        context.write(new LongWritable(0), new Text(value.getString("content", 0)));
       }
     }
 
@@ -101,6 +101,11 @@ public class TestInputOutputFormat {
       final Job job = new Job(conf, "read");
       job.setInputFormatClass(ExampleInputFormat.class);
       ExampleInputFormat.setInputPaths(job, parquetPath);
+      ExampleInputFormat.setSchema(job, MessageTypeParser.parseMessageType(
+              "message example {\n" +
+              "required int32 line;\n" +
+              "required binary content;\n" +
+              "}"));
       job.setOutputFormatClass(TextOutputFormat.class);
       TextOutputFormat.setOutputPath(job, outputPath);
       job.setMapperClass(TestInputOutputFormat.MyMapper2.class);
@@ -126,18 +131,18 @@ public class TestInputOutputFormat {
   
     {
     	fileSystem.delete(outputPath, true);
-        final Job job = new Job(conf, "read-onecolumn");
+        final Job job = new Job(conf, "read-onecolumn-content");
         job.setInputFormatClass(ExampleInputFormat.class);
         ExampleInputFormat.setInputPaths(job, parquetPath);
-        job.setOutputFormatClass(TextOutputFormat.class);
-        TextOutputFormat.setOutputPath(job, outputPath);
-        job.setMapperClass(TestInputOutputFormat.MyMapper3.class);
         ExampleInputFormat.setSchema(
                 job,
                 MessageTypeParser.parseMessageType(
                     "message example {\n" +
-                    "required int32 line;\n" +
+                    "required binary content;\n" +
                     "}"));
+        job.setOutputFormatClass(TextOutputFormat.class);
+        TextOutputFormat.setOutputPath(job, outputPath);
+        job.setMapperClass(TestInputOutputFormat.MyMapper3.class);
         job.setNumReduceTasks(0);
         job.submit();
         waitForJob(job);

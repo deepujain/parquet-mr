@@ -28,14 +28,14 @@ import parquet.schema.MessageTypeParser;
 
 public class GroupReadSupport extends ReadSupport<Group> {
 
-	public static final String PARQUET_EXAMPLE_SCHEMA = "parquet.example.schema";
+	public static final String PARQUET_SCHEMA = "parquet.schema";
 
 	public static void setSchema(MessageType schema, Configuration configuration) {
-		configuration.set(PARQUET_EXAMPLE_SCHEMA, schema.toString());
+		configuration.set(PARQUET_SCHEMA, schema.toString());
 	}
 
 	public static MessageType getSchema(Configuration configuration) {
-		return MessageTypeParser.parseMessageType(configuration.get(PARQUET_EXAMPLE_SCHEMA));
+		return MessageTypeParser.parseMessageType(configuration.get(PARQUET_SCHEMA));
 	}
 
 	@Override
